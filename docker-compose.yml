@@ -53,7 +53,9 @@ services:
     volumes:
       - ./config/karton.docker.ini:/etc/karton/karton.ini
   karton-dashboard:
-    image: certpl/karton-dashboard:8f5bdd94bed2ddff2ef4a826f8107a8ec11e8609
+    build:
+      context: ./karton-dashboard
+      dockerfile: ./Dockerfile
     depends_on:
       - redis
       - minio
