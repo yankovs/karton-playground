@@ -24,6 +24,7 @@ from karton.core.base import KartonBase
 from karton.core.inspect import KartonAnalysis, KartonQueue, KartonState
 from karton.core.task import Task, TaskPriority, TaskState
 from prometheus_client import Gauge, generate_latest  # type: ignore
+from .static.graph.python.graphs import graph
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,6 +33,13 @@ static_folder = app_path / "static"
 app = Flask(__name__, static_folder=None, template_folder=str(app_path / "templates"))
 
 karton = KartonBase(identity="karton.dashboard")
+
+@app.before_first_request
+def create_graph():
+    graph_struct = graph(KartonState(karton.backend))
+    graph_struct.build_nodes()
+    graph_struct.create_edges()
+    graph_struct.generate_graph()
 
 
 def restart_tasks(tasks: List[Task]) -> None:
@@ -368,4 +376,5 @@ def get_analysis_api(root_id):
 @app.route("/graph", methods=["GET"])
 def get_graphs():
     state = KartonState(karton.backend)
-    return render_template("graph.html", queues=state.queues)
+    print(state.backend.redis.keys("karton.outputs:*"))
+    return render_template("graph.html", state=state)
