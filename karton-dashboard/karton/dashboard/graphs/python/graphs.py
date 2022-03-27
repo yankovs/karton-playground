@@ -3,16 +3,18 @@ from dataclasses import dataclass
 from networkx.readwrite import json_graph
 from karton.core.inspect import KartonState
 import logging, json
+from pathlib import Path
 import networkx as nx
 
 logger = logging.getLogger("graphs")
-excluded = ['karton.classifier']
+excluded = ['karton.mwdb']
+graphs_folder = Path(__file__).parent.parent
 
-@dataclass
 class karton_node:
-    identity: str
-    filters: list[dict[str, str]] = None
-    outputs: list[dict[str, str]] = None
+    def __init__(self, identity, filters=None, outputs=None) -> None:
+        self.identity = identity
+        self.filters = filters
+        self.outputs = outputs
 
     def filter_contained(self, filter: dict[str, str], output: dict[str, str]):
         return all(item in output.items() for item in filter.items())
@@ -36,26 +38,22 @@ class graph:
 
         for bind in self.state.backend.get_binds():
             if bind.identity not in values:
-                values[bind.identity] = {}
+                values[bind.identity] = {'filters': None, 'outputs': None}
             values[bind.identity]['filters'] = bind.filters
 
         for producer in self.state.backend.redis.keys("karton.outputs:*"):
             identity = producer.split(":")[1]
             if identity not in values:
-                values[identity] = {}
-
+                values[identity] = {'filters': None, 'outputs': None}
             outputs = self.state.backend.redis.smembers(producer)
             values[identity]['outputs'] = outputs
 
         for iden in values.keys():
-            node = None
-            keys = values[iden].keys()
-            if 'filters' in keys and 'outputs' in keys:
-                node = karton_node(iden, values[iden]['filters'], values[iden]['outputs'])
-            elif 'filters' in keys:
-                node = karton_node(iden, values[iden]['filters'], None)
-            else:
-                node = karton_node(iden, None, values[iden]['outputs'])
+            node = karton_node(
+                identity=iden,
+                filters=values[iden]['filters'],
+                outputs=values[iden]['outputs']
+            )
             
             self.nodes.append(node)    
 
@@ -75,4 +73,5 @@ class graph:
         G = nx.DiGraph(self.edges)
         data = json_graph.adjacency_data(G)
         H = json_graph.adjacency_graph(data)
-        nx.write_gexf(H, 'karton/dashboard/static/graph/graph.gexf')
+        logger.info(graphs_folder / "graph.gexf")
+        nx.write_gexf(H, graphs_folder / "graph.gexf")

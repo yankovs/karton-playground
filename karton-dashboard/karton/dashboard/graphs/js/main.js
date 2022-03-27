@@ -15,7 +15,7 @@ const arrayToObject = (array) =>
 
 option = null;
 myChart.showLoading();
-$.get('../static/graph/graph.gexf', function (xml) {
+$.get('/graphs/graph.gexf', function (xml) {
     myChart.hideLoading();
 
     var graph = echarts.dataTool.gexf.parse(xml);

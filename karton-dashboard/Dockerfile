@@ -1,5 +1,11 @@
 FROM python:3.7
 
+WORKDIR /app/karton
+COPY ./karton/dashboard/karton .
+RUN ls
+RUN pip install -r requirements.txt
+RUN pip install .
+
 WORKDIR /app/service
 COPY ./MANIFEST.in ./MANIFEST.in
 COPY ./requirements.txt ./requirements.txt

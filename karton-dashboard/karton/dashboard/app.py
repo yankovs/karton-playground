@@ -24,17 +24,19 @@ from karton.core.base import KartonBase
 from karton.core.inspect import KartonAnalysis, KartonQueue, KartonState
 from karton.core.task import Task, TaskPriority, TaskState
 from prometheus_client import Gauge, generate_latest  # type: ignore
-from .static.graph.python.graphs import graph
+from .graphs.python.graphs import graph
 
 logging.basicConfig(level=logging.INFO)
 
 app_path = Path(__file__).parent
+
 static_folder = app_path / "static"
+graphs_folder = app_path / "graphs"
 app = Flask(__name__, static_folder=None, template_folder=str(app_path / "templates"))
 
 karton = KartonBase(identity="karton.dashboard")
 
-@app.before_first_request
+@app.before_request
 def create_graph():
     graph_struct = graph(KartonState(karton.backend))
     graph_struct.build_nodes()
@@ -231,6 +233,11 @@ def varz():
 @app.route("/static/<path:path>", methods=["GET"])
 def static(path: str):
     return send_from_directory(static_folder, path)
+
+
+@app.route("/graphs/<path:path>", methods=["GET"])
+def graphs(path: str):
+    return send_from_directory(graphs_folder, path)
 
 
 @app.route("/", methods=["GET"])
